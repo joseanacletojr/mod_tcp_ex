@@ -1,0 +1,358 @@
+from kivymd.app import MDApp
+from kivy.lang import Builder
+from kivymd.uix.label import MDLabel
+# from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.floatlayout import MDFloatLayout
+# from kivymd.uix.button import MDIconButton
+from kivymd.uix.dialog import MDDialog
+# from kivy.uix.scrollview import ScrollView
+from kivy.factory import Factory
+# from kivy.metrics import dp
+# import pandas as pd
+
+
+
+"""
+    Acrescentando a Parte do Gráfico
+"""
+
+from kivy.garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg
+from kivy.clock import Clock  # Clock é necessária para execução cíclica de ações dentro do projeto
+
+# Importando widgets necessários para estar junto ao gráfico
+from kivymd.uix.button import MDRaisedButton
+
+# Importando o que é necessário ao MatplotLib
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates  # Necessário para Uso de Datas e horas no Matplotlib
+from matplotlib.widgets import Slider
+
+# Importando Outras Bibliotecas necessárias Para questão de Tempo e Funcionalidades Matemáticas
+import numpy as np
+from datetime import datetime, timedelta
+from time import time
+
+"""
+                            Fim das importações de Bibliotecas
+"""
+
+"""
+                                    Início de Programa
+"""
+
+# Declarando variáveis como globais para utilização em todo o programa
+global t1  # Variável de tempo (datetime)
+global temp_vet, levels  # Vetores de tempo e valores, respectivamente
+global fig  # Variável relacionada à criação da área de gráfico
+global gfc  # Variável relacionada à criação da figura para gráfico. Figura != curva do gráfico
+global pause  # Variável relacionada à pausa e continuação da atualização do gráfico
+global tm_ab_graf  # Variável relacionada ao momento de abertura do gráfico
+global new_epoch
+
+global novo_min
+global novo_max
+
+global min_dt_ant
+global max_dt_ant
+min_dt_ant = 0
+max_dt_ant = 0
+
+# Inicializando variáveis globais
+temp_vet, levels = [], []  # Inicializando vetores primeiro
+t1 = datetime.now()  # Inicializando
+pause = 0  # Pausa na atualização do gráfico desabilitada
+tm_ab_graf = time()
+new_epoch = '1970-01-01T00:00:00'
+
+
+
+global lista  # Lista inicialmente representa os dados que quero mostrar no aplicativo.
+lista = [n*n for n in range(30)]
+global lt2
+
+"""
+                    Final de Declarações e inicializações de variáveis
+"""
+
+#  Criação da Classe responsável pela apresentação visual do gráfico, chamada por mim de Matty
+
+class Matty(MDFloatLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        Clock.schedule_once(self.aj_ids, .1) # Ao iniciar um objeto da Classe, habilita em .1s a execução de aj_ids
+
+    def rewind(self):
+        global pause
+        global novo_min
+        global novo_max
+        global rewind
+        global min_dt_ant
+        global max_dt_ant
+
+        print("rewind")
+        pause = 1
+        rewind = 1
+
+        min_at, max_at = plt.gca().get_xlim()
+        print("Valores get_xlim min_at: {}, max_at: {}".format(min_at, max_at))
+
+        try:
+            min_dt = mdates.num2date(min_at)
+            max_dt = mdates.num2date(max_at)
+        except:
+            min_dt = min_dt_ant
+            max_dt = max_dt_ant
+
+        print("Antes da Subtração min_dt: {}, max_dt {}".format(min_dt, max_dt))
+
+        max_dt = max_dt - timedelta(seconds=2)
+        min_dt = min_dt - timedelta(seconds=2)
+
+        print("Após da Subtração min_dt: {}, max_dt {}".format(min_dt, max_dt))
+        plt.plot(temp_vet, levels)
+        plt.gca().set_xlim([min_dt, max_dt])
+        gfc.draw()  # Desenhando novo gráfico na área de apresentação
+
+
+        min_dt_ant = min_dt
+        max_dt_ant = max_dt
+
+        print("Valores de min_dt_ant: {}, max_dt_ant: {}".format(min_dt_ant, max_dt_ant))
+
+        print("Confirmando se o novo valor foi colodado: \n")
+        res1, res2 = plt.gca().get_xlim()
+        print("x_min: {}, x_max: {}".format(res1, res2))
+
+
+    def play(self):
+        global pause
+        global min_dt_ant
+        global max_dt_ant
+
+        min_dt_ant, max_dt_ant = 0, 0
+        print("play")
+        pause = 0  # Desabilitando a pausa no gráfico
+        print("Função Play, valor de Pause: {}".format(pause))
+
+    def pausa(self):
+        global pause
+        print("pausa")
+        pause = 1  # Habilitando a Pausa no gráfico
+        print("Função Pausa, valor de Pause: {}".format(pause))
+
+    def avanca(self):
+        print("avança")
+
+        global pause
+        global novo_min
+        global novo_max
+        global rewind
+        global min_dt_ant
+        global max_dt_ant
+
+        print("rewind")
+        pause = 1
+        rewind = 1
+
+        min_at, max_at = plt.gca().get_xlim()
+        plt.gcf().subplots_adjust(bottom=0.25)
+
+        print("Valores get_xlim min_at: {}, max_at: {}".format(min_at, max_at))
+
+        try:
+            min_dt = mdates.num2date(min_at)
+            max_dt = mdates.num2date(max_at)
+        except:
+            min_dt = min_dt_ant
+            max_dt = max_dt_ant
+
+        print("Antes da Subtração min_dt: {}, max_dt {}".format(min_dt, max_dt))
+
+        max_dt = max_dt + timedelta(seconds=2)
+        min_dt = min_dt + timedelta(seconds=2)
+
+        print("Após da Subtração min_dt: {}, max_dt {}".format(min_dt, max_dt))
+        plt.gcf().subplots_adjust(bottom=.25)
+        plt.gca().subplots(111)
+        plt.gca().set_xlim([min_dt, max_dt])
+        plt.gcf().autofmt_xdate()
+
+        gfc.draw()  # Desenhando novo gráfico na área de apresentação
+
+
+        min_dt_ant = min_dt
+        max_dt_ant = max_dt
+
+        print("Valores de min_dt_ant: {}, max_dt_ant: {}".format(min_dt_ant, max_dt_ant))
+
+        print("Confirmando se o novo valor foi colodado: \n")
+        res1, res2 = plt.gca().get_xlim()
+        print("x_min: {}, x_max: {}".format(res1, res2))
+
+
+
+    def aj_ids(self, taut):
+        print(self.ids)
+        graf = self.ids.grafico  # Dentre os ids da classe Matty, pegue o id
+        print("Priantando ids {}".format(graf))
+
+        global gfc  # colocando gfc como variável global para uso externo posteriormente
+        gfc = FigureCanvasKivyAgg(plt.gcf())  # gcf = get current figure (Pegar a figure atual)
+        graf.add_widget(gfc)
+
+        graf.pos_hint = {'center_x':.5, 'center_y':.5} #  Aqui ajustam-se as posições do gráfico
+
+        Clock.schedule_interval(self.at_graf, .001) # Define uma execução cíclica de at_graf a cada 1ms
+
+    def at_graf(self, timeout):
+        global t1
+
+        # Cálculo do Tempo
+        t1 = t1 + timedelta(seconds=timeout)  # Acrescentando a variação de tempo a cada execução cíclica de at_graf.
+        t3 = time()
+
+        # Cálculo do Valor
+        valor = np.cos(2*np.pi*t3/4)
+
+        # Anexando novos valores obtidos nas listas para plotar gráfico
+        temp_vet.append(t1)
+        levels.append(valor)
+
+        # Limpando Gráfico para nova plotagem
+        plt.clf()  # CLF = Clear Figure
+
+        if pause == 0:  # Se a pausa está desabilitada:
+
+            # Cálculo de quanto tempo o gráfico está aberto para não poluir demais o gráfico
+            t_dec = (temp_vet[-1] - temp_vet[0]).total_seconds()
+
+            # Se o tempo decorrido for maior que 10s, os limites do gráfico serão sempre de 10s
+            # Partindo de 10 segundos atrás do último tempo de medição até o último tempo de medição
+            if t_dec > 10:
+                plt.xlim([temp_vet[-1] - timedelta(seconds=10), temp_vet[-1]])
+                min, max = plt.gca().get_xlim()
+                #print("Valor Mínimo dos Eixos do Gráfico {}".format(min))
+                #print("Valor Máximo dos Eixos do Gráfico {}".format(max))
+
+            # Plotando novamente os gráfico
+            plt.plot(temp_vet, levels)
+
+            # Ajustando a formatação do eixo X para apresentação em horário
+            # Habilitando a formatação
+            plt.gcf().autofmt_xdate()
+            # Configurando Apresentando na formatação hora:minuto:segundo:milisegundo
+            myFmt = mdates.DateFormatter('%H:%M:%S:%m')
+            # Aplicando formatação configurada para o eixo X
+            plt.gca().xaxis.set_major_formatter(myFmt)
+
+            # Configurando Informações Básicas de Gráfico (Títulos, e informações de eixos)
+            plt.title("Entrada Digital 1 em Função do Tempo")  # Título
+            plt.xlabel("Horário")  # Eixo X
+            plt.ylabel("Valor")  # Eixo Y
+            plt.grid()  # Habilitando uso de malha quadriculada
+
+            plt.subplots_adjust(bottom=0.25)
+            conf_slider = plt.axes([.25, .1, .65, .03])
+            #  Definindo a Slider
+            slider = Slider(conf_slider, "Tempo", valmin=levels[0], valmax=(levels[-1] * 2),
+                            valstep=((levels[-1] - levels[0]) / 100), valinit=(levels[-1] + 2))
+
+            # slider.on_changed(func=lambda x: update(slider, fig))
+
+
+            gfc.draw()  # Desenhando novo gráfico na área de apresentação
+
+
+
+class meu_label (MDLabel):
+    pass
+
+
+class DigiList(MDFloatLayout):
+    pass
+
+
+class Content(MDFloatLayout):
+    pass
+
+
+class Meu_App(MDApp):
+    def ajust_tela(self, posic, valor):
+        if valor == 0:
+            lt2 = []
+
+
+        dl = Factory.DigiList()
+        dl.ids.digi_nome.text = posic + " " + str(valor)
+
+        dl.ids.mdf_layout.size_hint_y = None
+        dl.ids.mdf_layout.height = 100
+        dl.ids.mdf_layout.pos = (0, (len(lista)*100) - ((valor-1)*100) - 100)
+        dl.ids.mdf_layout.pos = (0, (len(lista) * 100) - ((valor - 1) * 100) - 100)
+
+
+        dl.ids.icbtn.name = posic + " " + str(valor)
+
+        if valor % 2 == 0:
+            dl.ids.mdf_layout.md_bg_color = (183 / 255, 232 / 255, 251 / 255, 1)
+        else:
+            dl.ids.mdf_layout.md_bg_color = (227 / 255, 246 / 255, 253 / 255, 1)
+        return dl
+
+
+
+    # Aqui tem que ser definido o que será utilizado no arquivo kv
+    lista2 = lista
+    a = Factory.DigiList()
+    lt = []
+    vr = 0
+
+    def build(self):
+        global kv
+        # Arquivo responsável por carregar a Classe Matty Para a cx de diag (Olhar melhor depois)
+        kv = Builder.load_file("arq_carregado.kv")
+        Builder.load_file("retornando.kv")
+        butt = Factory.DigiList()
+        print(butt.ids)
+
+        bug = Factory.DigiList()
+        print("Esses são os children de bug ",bug.children)
+        bug.ids.digi_nome.text = "Entrada Digital 3"
+
+        # Ajustando o Tamanho do ScrollView
+        #scr_vw.size_hint = (1, 1.5 + 1)  # cada item da lista tem altura 0.15
+
+        #lst = []
+
+        return Builder.load_file("test_widgets2506.kv")
+
+
+    def info_add(self, var: str):
+        print(var)
+        aux = var
+
+        #Builder.load_file("arq_carregado.kv")  # Carregando arquivo c/ infos da classe Matty
+
+        self.dialog = MDDialog(
+            title=var,
+            text="Esta caixa de diálogos se refere a uma tentaiva bem-sucedida",
+            type="custom",
+            content_cls=Content()
+
+        )
+
+        self.dialog.open()
+
+    def fec_dlg(self):
+        print('fec_dlg')
+        self.dialog.dismiss()
+
+    def test_func(self):
+        print("Fechando função")
+
+
+"""
+Acrescentando Parte do MQTT no Programa
+"""
+
+Meu_App().run()
